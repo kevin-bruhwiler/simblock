@@ -1,5 +1,6 @@
 from subprocess import check_output
 from collections import defaultdict
+import ast
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -21,8 +22,9 @@ with open('D:\\simblock\\simulator\\src\\main\\java\\simblock\\settings\\Network
 
 throttles = [0, 10000000, 1000000, 100000, 10000, 1000, 0]
 data = defaultdict(list)
+block_counts = defaultdict(list)
 
-for i in range(1, len(throttles)):
+for i in range(0, len(throttles)-1):
 	for l in download_with_value():
 		settings = settings.replace(l.format(throttles[i-1]), l.format(throttles[i]))
 
@@ -32,11 +34,13 @@ for i in range(1, len(throttles)):
 	with open('D:\\simblock\\simulator\\src\\main\\java\\simblock\\settings\\NetworkConfiguration.java', 'w') as f:
 		f.write(settings)
 
-	for _ in range(20):
+	for _ in range(100):
 		out = check_output("gradlew.bat :simulator:run", shell=True).decode()
 		for line in out.split('\n'):
 			if line.startswith("Number of detected forks:"):
 				data[i].append(int(line.split(' ')[-1]))
+			elif line.startswith("Count of blocks at each node: "):
+				block_counts[throttles[i]].append(ast.literal_eval(line.split(': ')[-1]))
 			
 print(data)
 plt.errorbar([throttles[x] for x in data.keys()], 
@@ -46,4 +50,14 @@ plt.xscale('log')
 plt.xlabel("Bandwidth (bit/sec)")
 plt.ylabel("Number of Forks")
 plt.title("NA Maintains Connections to SA")
+plt.show()
+plt.clf()
+
+print(block_counts)
+for k, v in block_counts.items():
+	plt.plot(np.mean(np.array(v), axis=0)[:-1]-1, label="Bandwidth of " + str(k) + " bits/sec")
+plt.legend()
+plt.ylabel("Excess Blocks Mined")
+plt.xlabel("Index of the Block")
+plt.title("Excess Blocks Mined in Superstorm Scenario")
 plt.show()

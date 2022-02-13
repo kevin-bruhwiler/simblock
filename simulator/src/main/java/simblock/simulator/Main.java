@@ -47,6 +47,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -195,6 +196,23 @@ public class Main {
     }
 
     System.out.println("Number of detected forks: " + num_forks);
+
+    // Count the number of blocks for each index of the chain at each node
+    ArrayList<Integer> totalCounts = new ArrayList<Integer>();
+
+    for (Node node : getSimulatedNodes()){
+      int i = 0;
+      for(int count : node.getBlockCount()){
+        if (totalCounts.size() > i){
+          totalCounts.set(i, totalCounts.get(i) + count);
+	    } else {
+          totalCounts.add(count);
+	    }
+        i += 1;
+	  }
+	}
+
+    System.out.println("Count of blocks at each node: " + Arrays.toString(totalCounts.toArray()));
 
     Set<Block> orphans = new HashSet<>();
     int averageOrphansSize = 0;

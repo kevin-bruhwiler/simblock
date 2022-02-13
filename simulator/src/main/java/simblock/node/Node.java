@@ -95,6 +95,16 @@ public class Node {
   private final Set<Block> orphans = new HashSet<>();
 
   /**
+   * Count of blocks seen at each index
+   */
+   private final ArrayList<Integer> blockCount = new ArrayList<>();
+   
+   /**
+   * Keep track of the current length of the chain at this node
+   */
+   private int length = 0;
+
+  /**
    * The current minting task
    */
   private AbstractMintingTask mintingTask = null;
@@ -173,6 +183,15 @@ public class Node {
    */
   public long getMiningPower() {
     return this.miningPower;
+  }
+
+   /**
+   * Gets the block count.
+   *
+   * @return the block count
+   */
+  public ArrayList<Integer> getBlockCount() {
+    return this.blockCount;
   }
 
   /**
@@ -292,6 +311,15 @@ public class Node {
     // Update the current block
     this.block = newBlock;
     printAddBlock(newBlock);
+
+    // If we minted this block, add to the count for this index
+    if (this.block.getMinter() == this){
+      blockCount.add(1);
+	} else {
+      blockCount.add(0);
+	}
+
+    length += 1;
     // Observe and handle new block arrival
     arriveBlock(newBlock, this);
   }
