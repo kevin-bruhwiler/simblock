@@ -5,10 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-download_partition = ["{25000000, 0, 0, 0, 0, 0, 0}", "{0, 40000000, 18000000, 22800000, 22800000, 29900000}", "{0, 18000000, 18000000, 18000000, 18000000, 18000000}", "{0, 22800000, 18000000, 22800000, 22800000, 22800000}", "{0, 22800000, 18000000, 22800000, 22800000, 22800000}", "{0, 29900000, 18000000, 22800000, 22800000, 29900000}"]
-
-upload_partition = ["{19200000, 0, 0, 0, 0, 0, 0}", "{0, 20700000, 5800000, 15700000, 10200000, 11300000}", "{0, 5800000, 5800000, 5800000, 5800000, 5800000}", "{0, 15700000, 5800000, 15700000, 10200000, 11300000}", "{0, 10200000, 5800000, 10200000, 10200000, 10200000}", "{0, 11300000, 5800000, 11300000, 10200000, 11300000}"]
-
 def download_with_value():
     return ["{{25000000, {0}, 18000000, {0}, {0}, {0}, {0}}}", "{{{0}, 40000000, 18000000, 22800000, 22800000, 29900000}}", "{{18000000, 18000000, 18000000, 18000000, 18000000, 18000000}}", "{{{0}, 22800000, 18000000, 22800000, 22800000, 22800000}}", "{{{0}, 22800000, 18000000, 22800000, 22800000, 22800000}}", "{{{0}, 29900000, 18000000, 22800000, 22800000, 29900000}}"]
 
@@ -20,11 +16,11 @@ def upload_with_value():
 with open('D:\\simblock\\simulator\\src\\main\\java\\simblock\\settings\\NetworkConfiguration.java', 'r') as f:
     settings = f.read()
 
-throttles = [0, 10000000, 1000000, 100000, 10000, 1000, 0]
+throttles = [1000, 10000000, 1000000, 100000, 10000, 1000]
 data = defaultdict(list)
 block_counts = defaultdict(list)
 
-for i in range(0, len(throttles)-1):
+for i in range(1, len(throttles)):
 	for l in download_with_value():
 		settings = settings.replace(l.format(throttles[i-1]), l.format(throttles[i]))
 
@@ -34,7 +30,7 @@ for i in range(0, len(throttles)-1):
 	with open('D:\\simblock\\simulator\\src\\main\\java\\simblock\\settings\\NetworkConfiguration.java', 'w') as f:
 		f.write(settings)
 
-	for _ in range(100):
+	for _ in range(3):
 		out = check_output("gradlew.bat :simulator:run", shell=True).decode()
 		for line in out.split('\n'):
 			if line.startswith("Number of detected forks:"):
@@ -55,9 +51,9 @@ plt.clf()
 
 print(block_counts)
 for k, v in block_counts.items():
-	plt.plot(np.mean(np.array(v), axis=0)[:-1]-1, label="Bandwidth of " + str(k) + " bits/sec")
+	plt.plot(np.mean(np.array(v), axis=0), label="Bandwidth of " + str(k) + " bits/sec")
 plt.legend()
-plt.ylabel("Excess Blocks Mined")
+plt.ylabel("Total Blocks Added")
 plt.xlabel("Index of the Block")
-plt.title("Excess Blocks Mined in Superstorm Scenario")
+plt.title("Total Blocks Added in Superstorm Scenario")
 plt.show()

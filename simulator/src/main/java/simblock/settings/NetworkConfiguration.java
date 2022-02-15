@@ -131,7 +131,8 @@ public class NetworkConfiguration {
   //private static final long[] UPLOAD_BANDWIDTH_2019 = {
   //    19200000, 20700000, 5800000, 15700000,
   //    10200000, 11300000, 6 * 1000000
-  //};
+  //}; 
+  
   private static final long[][] UPLOAD_BANDWIDTH_2019_PARTITIONED = {
       {19200000, 1000, 5800000, 1000, 1000, 1000, 1000},
       {1000, 20700000, 5800000, 15700000, 10200000, 11300000},

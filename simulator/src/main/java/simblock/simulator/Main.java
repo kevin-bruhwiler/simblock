@@ -198,21 +198,24 @@ public class Main {
     System.out.println("Number of detected forks: " + num_forks);
 
     // Count the number of blocks for each index of the chain at each node
-    ArrayList<Integer> totalCounts = new ArrayList<Integer>();
+    int max_length = 0;
+    for (Node node : getSimulatedNodes()){
+      if (node.getBlockCount().size() > max_length)
+        max_length = node.getBlockCount().size();
+	}
+
+    int[] totalCounts = new int[max_length];
 
     for (Node node : getSimulatedNodes()){
       int i = 0;
+      System.out.println("Count of blocks at node: " + Arrays.toString(node.getBlockCount().toArray()));
       for(int count : node.getBlockCount()){
-        if (totalCounts.size() > i){
-          totalCounts.set(i, totalCounts.get(i) + count);
-	    } else {
-          totalCounts.add(count);
-	    }
+        totalCounts[i] += count;
         i += 1;
 	  }
 	}
-
-    System.out.println("Count of blocks at each node: " + Arrays.toString(totalCounts.toArray()));
+    System.out.println("Max length: " + max_length);
+    System.out.println("Count of blocks at each node: " + Arrays.toString(totalCounts));
 
     Set<Block> orphans = new HashSet<>();
     int averageOrphansSize = 0;
