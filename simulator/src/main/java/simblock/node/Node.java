@@ -89,6 +89,13 @@ public class Node {
    */
   private Block block;
 
+  /*
+  *  Blocks in different branches
+  */
+  private List<Block> blocks;
+  private List<Node> responded = new ArrayList<>;
+  private TimeoutMessageTask timeoutTask = null;
+
   /**
    * Orphaned blocks known to node.
    */
@@ -203,6 +210,10 @@ public class Node {
     return this.block;
   }
 
+  public List<Block> getBlocks() {
+    return this.blocks;
+  }
+
   /**
    * Gets all orphans known to node.
    *
@@ -289,8 +300,41 @@ public class Node {
       removeTask(this.mintingTask);
       this.mintingTask = null;
     }
+
+    // If the node is still signing a block
+    if (this.timeoutTask != null) {
+      removeTask(this.timeoutTask);
+      this.timeoutTask = null;
+      this.orphans.add(this.block);
+    }
+
     // Update the current block
     this.block = newBlock;
+
+    // Nick
+    // handle adding blocks with branch
+    if (newBlock instanceof BFTBlock) {
+      if (((BFTBlock)newBlock).parents.size() > 1) {
+        // A merging block
+        this.blocks.clear();
+        this.blocks.add(newBlock);
+      } else {
+        boolean isNewBranch = true;
+        // Not merging block, find the corresponding branch
+        for (int i = 0; i < this.blocks.size(); i ++) {
+          if (this.blocks.get(i).isOnSameChainAs(newBlock)) {
+            this.blocks.set(i, newBlock);
+            isNewBranch = false;
+            break;
+          }
+        }
+
+        if (isNewBranch){
+          this.blocks.add(newBlock);
+        }
+      }
+    }
+
     printAddBlock(newBlock);
     // Observe and handle new block arrival
     arriveBlock(newBlock, this);
@@ -357,6 +401,26 @@ public class Node {
     }
   }
 
+  /** Nick
+   * Sign block. Called by BFTMinging
+   *
+   * @param BFTBlock the block
+   */
+  public void signBlock(BFTBlock block) {
+    this.block = block;
+    this.responded.clear();
+
+    List<Node> group = block.getConsensusGroup();
+    for (Node to : group) {
+      AbstractMessageTask task = new HelloMessageTask(this, to, block);
+      putTask(task);
+    }
+
+    // TODO: ADD timeout to setting
+    timeoutTask = new TimeoutMessageTask(this, this, 500, TimeoutMessageTask.Type.Hello);
+    this.putTask(timeoutTask);
+  }
+
   /**
    * Receive block.
    *
@@ -364,7 +428,7 @@ public class Node {
    */
   public void receiveBlock(Block block) {
     if (this.consensusAlgo.isReceivedBlockValid(block, this.block)) {
-      if (this.block != null && !this.block.isOnSameChainAs(block)) {
+      if (this.block != null && !this.block.isOnSameChainAs(block) && ！this.block instanceof BFTBlock) {
         // If orphan mark orphan
         this.addOrphans(this.block, block);
       }
@@ -439,6 +503,68 @@ public class Node {
       Block block = ((BlockMessageTask) message).getBlock();
       downloadingBlocks.remove(block);
       this.receiveBlock(block);
+    }
+    
+
+    // Nick
+    // handle new message type
+    if (message instanceof HelloMessageTask) {
+      if (this.timeoutTask == null) {
+        return;
+      }
+
+      boolean accepted = true;
+      for (BFTBlock block : this.blocks) {
+        if (block.isOnSameChainAs(newBlock)) {
+          if (block.getHeight() > newBlock.getHeight()) {
+            accepted = false;
+            break;
+          }
+        }
+      }
+      // If not seen any block at the slot, reply with yes
+      AbstractMessageTask task = new ReplyMessageTask(this, from, accepted);
+    }
+
+    if (message instanceof ReplyMessageTask) {
+      if (this.timeoutTask == null) {
+        return;
+      }
+      
+      if (((ReplyMessageTask)message).verified()) {
+        responded.add(from);
+      } else {
+        // Should stop the task
+        removeTask(this.timeoutTask);
+        this.timeoutTask = null;
+
+        // Current block is marked as wasted
+        this.orphans.add(this.block);
+        this.block = this.block.getParent();
+      }
+
+      // If all responded, sign and sendout the new block
+      if (responded.size() == ((BFTBlock)this.block).getConsensusGroup().size()) {
+        // TODO: setup signee
+        ((BFTBlock)this.block).setSignee(responded);
+        // Setup consensus delay
+        removeTask(this.timeoutTask);
+        // TODO: ADD consensus latency to setting
+        this.timeoutTask = new TimeoutMessageTask(this, this, 1000, TimeoutMessageTask.Type.Consensus);
+        putTask(this.timeoutTask);
+      }
+    }
+
+    if (message instanceof TimeoutMessageTask) {
+      Type type = ((TimeoutMessageTask)message).getType();
+      if (type == TimeoutMessageTask.Type.Consensus) {
+        receiveBlock(this.block);
+        this.timeoutTask = null;
+      } else if (type == TimeoutMessageTask.Type.Hello) {
+        ((BFTBlock)this.block).setSignee(responded);
+        this.timeoutTask = new TimeoutMessageTask(this, this, 1000, TimeoutMessageTask.Type.Consensus);
+        putTask(this.timeoutTask);
+      }
     }
   }
 
