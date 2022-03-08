@@ -37,7 +37,7 @@ public class SimulationConfiguration {
    */
   //TODO not documented in markdown
   // TODO return to PoW
-  public static final String ALGO = "simblock.node.consensus.ProofOfWork";
+  public static final String ALGO = "simblock.node.consensus.BFTConsensusAlgo";
 
   /**
    * The expected value of block generation interval. The difficulty of mining is automatically

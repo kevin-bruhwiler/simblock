@@ -25,7 +25,7 @@ public class Block {
   /**
    * The current height of the block.
    */
-  private final int height;
+  protected int height;
 
   /**
    * The parent {@link Block}.

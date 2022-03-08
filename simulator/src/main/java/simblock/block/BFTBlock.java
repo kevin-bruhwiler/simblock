@@ -7,6 +7,9 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static simblock.simulator.Simulator.getSimulatedNodes;
+import static simblock.simulator.Simulator.getTargetInterval;
+
 
 public class BFTBlock extends ProofOfWorkBlock {
 
@@ -27,6 +30,7 @@ public class BFTBlock extends ProofOfWorkBlock {
         this.parents = parents;
         this.signers = new ArrayList<>();
         this.consensusGroup = new ArrayList<>();
+        this.height = parents.size() == 0 ? 0 : getMaxHeight(parents);
 
         if (parents.size() > 1) {
             // we get each parent's consensus group and select some of them based on the branch size (w * hash power)
@@ -48,6 +52,16 @@ public class BFTBlock extends ProofOfWorkBlock {
         }
     }
 
+    private int getMaxHeight(List<BFTBlock> parents) {
+        int max = 0;
+        for (BFTBlock block : parents) {
+            if (block.getHeight() > max) {
+                max = block.getHeight();
+            }
+        }
+        return max;
+    }
+
     /**
      *
      * @return consensus group which consist of maximum w nodes that mined w previous blocks. There can be duplicate nodes.
@@ -62,5 +76,40 @@ public class BFTBlock extends ProofOfWorkBlock {
      */
     private Integer getBranchSize() {
         return signers.size();
+    }
+
+    public List<BFTBlock> getParents() {
+        return this.parents;
+    }
+
+    public boolean isOnSameChainAs(Block block) {
+        if (block == null) {
+            return false;
+        } else if (block.equals(this)) {
+            return true;
+        } else if (this.height <= block.height) {
+            for (BFTBlock b : ((BFTBlock) block).getParents()) {
+                if (this.isOnSameChainAs(b))
+                    return true;
+            }
+            return false;
+        } else {
+            return block.isOnSameChainAs(this);
+        }
+    }
+
+
+    public void setSigners(List<Node> responded) {
+        this.signers = responded;
+    }
+
+    public static BFTBlock genesisBlock(Node minter) {
+        long totalMiningPower = 0;
+        for (Node node : getSimulatedNodes()) {
+            totalMiningPower += node.getMiningPower();
+        }
+        genesisNextDifficulty = BigInteger.valueOf(totalMiningPower * getTargetInterval());
+        List<BFTBlock> emptyParents = new ArrayList<>();
+        return new BFTBlock(emptyParents,  minter, 0, BigInteger.ZERO);
     }
 }

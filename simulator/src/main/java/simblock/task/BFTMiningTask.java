@@ -19,6 +19,8 @@ package simblock.task;
 import static simblock.simulator.Timer.getCurrentTime;
 
 import java.math.BigInteger;
+import java.util.List;
+
 import simblock.block.BFTBlock;
 import simblock.node.Node;
 
@@ -26,6 +28,7 @@ import simblock.node.Node;
  * The type Mining task.
  */
 public class BFTMiningTask extends MiningTask {
+
   /**
    * Instantiates a new Mining task.
    *
@@ -33,15 +36,15 @@ public class BFTMiningTask extends MiningTask {
    * @param interval   the interval
    * @param difficulty the difficulty
    */
-  //TODO how is the difficulty expressed and used here?
-  public MiningTask(Node minter, long interval, BigInteger difficulty) {
+  public BFTMiningTask(Node minter, long interval, BigInteger difficulty) {
     super(minter, interval, difficulty);
   }
 
   @Override
   public void run() {
+    List<BFTBlock> parents = (List<BFTBlock>)(List<?>) this.getMinter().getBlocks();
     BFTBlock createdBlock = new BFTBlock(
-        (List<BFTBlock>) this.getMinter().getBlocks(), this.getMinter(), getCurrentTime(),
+        parents, this.getMinter(), getCurrentTime(),
         this.difficulty
     );
     this.getMinter().signBlock(createdBlock);

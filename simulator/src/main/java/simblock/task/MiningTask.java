@@ -26,7 +26,7 @@ import simblock.node.Node;
  * The type Mining task.
  */
 public class MiningTask extends AbstractMintingTask {
-  private final BigInteger difficulty;
+  protected final BigInteger difficulty;
 
   /**
    * Instantiates a new Mining task.

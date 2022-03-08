@@ -40,12 +40,12 @@ public class TimeoutMessageTask extends AbstractMessageTask {
    *
    * @param from  the sender
    * @param to    the receiver
-   * @param block the block to be advertised
+   * @param type the block to be advertised
    */
-  public TimeoutMessageTask(Node from, Node to, long timeout, Type, type) {
+  public TimeoutMessageTask(Node from, Node to, long timeout, Type type) {
     super(from, to);
     this.interval = timeout;
-    this.type = Type
+    this.type = type;
   }
 
   @Override

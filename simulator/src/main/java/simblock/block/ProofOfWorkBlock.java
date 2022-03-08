@@ -30,7 +30,7 @@ public class ProofOfWorkBlock extends Block {
   private final BigInteger difficulty;
   private final BigInteger totalDifficulty;
   private final BigInteger nextDifficulty;
-  private static BigInteger genesisNextDifficulty;
+  protected static BigInteger genesisNextDifficulty;
 
   /**
    * Instantiates a new Proof of work block.

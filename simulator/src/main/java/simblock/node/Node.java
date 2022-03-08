@@ -29,21 +29,13 @@ import static simblock.simulator.Timer.getCurrentTime;
 import static simblock.simulator.Timer.putTask;
 import static simblock.simulator.Timer.removeTask;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
+import simblock.block.BFTBlock;
 import simblock.block.Block;
 import simblock.node.consensus.AbstractConsensusAlgo;
 import simblock.node.routing.AbstractRoutingTable;
-import simblock.task.AbstractMessageTask;
-import simblock.task.AbstractMintingTask;
-import simblock.task.BlockMessageTask;
-import simblock.task.CmpctBlockMessageTask;
-import simblock.task.GetBlockTxnMessageTask;
-import simblock.task.InvMessageTask;
-import simblock.task.RecMessageTask;
+import simblock.task.*;
 
 /**
  * A class representing a node in the network.
@@ -93,7 +85,7 @@ public class Node {
   *  Blocks in different branches
   */
   private List<Block> blocks;
-  private List<Node> responded = new ArrayList<>;
+  private List<Node> responded = new ArrayList<>();
   private TimeoutMessageTask timeoutTask = null;
 
   /**
@@ -314,7 +306,7 @@ public class Node {
     // Nick
     // handle adding blocks with branch
     if (newBlock instanceof BFTBlock) {
-      if (((BFTBlock)newBlock).parents.size() > 1) {
+      if (((BFTBlock)newBlock).getParents().size() > 1) {
         // A merging block
         this.blocks.clear();
         this.blocks.add(newBlock);
@@ -404,7 +396,7 @@ public class Node {
   /** Nick
    * Sign block. Called by BFTMinging
    *
-   * @param BFTBlock the block
+   * @param block the block
    */
   public void signBlock(BFTBlock block) {
     this.block = block;
@@ -418,7 +410,7 @@ public class Node {
 
     // TODO: ADD timeout to setting
     timeoutTask = new TimeoutMessageTask(this, this, 500, TimeoutMessageTask.Type.Hello);
-    this.putTask(timeoutTask);
+    putTask(timeoutTask);
   }
 
   /**
@@ -428,7 +420,7 @@ public class Node {
    */
   public void receiveBlock(Block block) {
     if (this.consensusAlgo.isReceivedBlockValid(block, this.block)) {
-      if (this.block != null && !this.block.isOnSameChainAs(block) && ！this.block instanceof BFTBlock) {
+      if (this.block != null && !this.block.isOnSameChainAs(block) && !(this.block instanceof BFTBlock)) {
         // If orphan mark orphan
         this.addOrphans(this.block, block);
       }
@@ -512,11 +504,12 @@ public class Node {
       if (this.timeoutTask == null) {
         return;
       }
-
       boolean accepted = true;
-      for (BFTBlock block : this.blocks) {
-        if (block.isOnSameChainAs(newBlock)) {
-          if (block.getHeight() > newBlock.getHeight()) {
+      for (Block block : this.blocks) {
+        BFTBlock bftBlock = (BFTBlock) block;
+        Block newBlock = ((HelloMessageTask) message).getBlock();
+        if (bftBlock.isOnSameChainAs(newBlock)) {
+          if (bftBlock.getHeight() > newBlock.getHeight()) {
             accepted = false;
             break;
           }
@@ -546,7 +539,7 @@ public class Node {
       // If all responded, sign and sendout the new block
       if (responded.size() == ((BFTBlock)this.block).getConsensusGroup().size()) {
         // TODO: setup signee
-        ((BFTBlock)this.block).setSignee(responded);
+        ((BFTBlock)this.block).setSigners(responded);
         // Setup consensus delay
         removeTask(this.timeoutTask);
         // TODO: ADD consensus latency to setting
@@ -556,12 +549,12 @@ public class Node {
     }
 
     if (message instanceof TimeoutMessageTask) {
-      Type type = ((TimeoutMessageTask)message).getType();
+      TimeoutMessageTask.Type type = ((TimeoutMessageTask)message).getType();
       if (type == TimeoutMessageTask.Type.Consensus) {
         receiveBlock(this.block);
         this.timeoutTask = null;
       } else if (type == TimeoutMessageTask.Type.Hello) {
-        ((BFTBlock)this.block).setSignee(responded);
+        ((BFTBlock)this.block).setSigners(responded);
         this.timeoutTask = new TimeoutMessageTask(this, this, 1000, TimeoutMessageTask.Type.Consensus);
         putTask(this.timeoutTask);
       }
