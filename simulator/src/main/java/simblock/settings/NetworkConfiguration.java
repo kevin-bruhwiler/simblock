@@ -31,7 +31,23 @@ public class NetworkConfiguration {
       Arrays.asList("NORTH_AMERICA", "EUROPE", "SOUTH_AMERICA", "ASIA_PACIFIC", "JAPAN",
                     "AUSTRALIA"
       ));
-
+//
+  private static final long[][] DOWNLOAD_BANDWIDTH_2019_Taiwan = {
+          {52000000, 40000000, 18000000, 2280000, 22800000, 29900000},
+          {40000000, 40000000, 18000000, 22800000, 22800000, 29900000},
+          {18000000, 18000000, 18000000, 18000000, 18000000, 18000000},
+          {2280000, 22800000, 18000000, 22800000, 22800000, 22800000},
+          {22800000, 22800000, 18000000, 22800000, 22800000, 22800000},
+          {29900000, 29900000, 18000000, 22800000, 22800000, 29900000}
+  };
+  private static final long[][] UPLOAD_BANDWIDTH_2019_Taiwan = {
+          {19200000, 20700000, 5800000, 1570000, 10200000, 11300000},
+          {20700000, 20700000, 5800000, 15700000, 10200000, 11300000},
+          {5800000, 5800000, 5800000, 5800000, 5800000, 5800000},
+          {1570000, 15700000, 5800000, 15700000, 10200000, 11300000},
+          {10200000, 10200000, 5800000, 10200000, 10200000, 10200000},
+          {11300000, 11300000, 5800000, 11300000, 10200000, 11300000}
+  };
   /**
    * LATENCY[i][j] is average latency from REGION_LIST[i] to REGION_LIST[j]
    * Unit: millisecond, for year 2015
@@ -114,7 +130,7 @@ public class NetworkConfiguration {
    */
   public static final long[][] DOWNLOAD_BANDWIDTH = DOWNLOAD_BANDWIDTH_2019;
 
-  public static final long[][] DOWNLOAD_BANDWIDTH_PARTITIONED = DOWNLOAD_BANDWIDTH_2019_PARTITIONED;
+  public static final long[][] DOWNLOAD_BANDWIDTH_PARTITIONED = DOWNLOAD_BANDWIDTH_2019_Taiwan;
 
   /**
    * List of upload bandwidth assigned to each region. (unit: bit per second), and last element
@@ -157,7 +173,7 @@ public class NetworkConfiguration {
    */
   public static final long[][] UPLOAD_BANDWIDTH = UPLOAD_BANDWIDTH_2019;
 
-  public static final long[][] UPLOAD_BANDWIDTH_PARTITIONED = UPLOAD_BANDWIDTH_2019_PARTITIONED;
+  public static final long[][] UPLOAD_BANDWIDTH_PARTITIONED = UPLOAD_BANDWIDTH_2019_Taiwan;
 
   /**
    * Region distribution Bitcoin 2015.
