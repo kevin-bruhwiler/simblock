@@ -35,6 +35,7 @@ import static simblock.simulator.Simulator.getSortedSimulatedNodes;
 import static simblock.simulator.Simulator.setTargetInterval;
 import static simblock.simulator.Timer.getCurrentTime;
 import static simblock.simulator.Timer.getTask;
+import static simblock.simulator.Timer.putTask;
 import static simblock.simulator.Timer.putTaskAbsoluteTime;
 import static simblock.simulator.Timer.runTask;
 
@@ -54,6 +55,7 @@ import java.util.Set;
 
 import simblock.block.BFTBlock;
 import simblock.block.Block;
+import simblock.block.BFTBlock;
 import simblock.node.Node;
 import simblock.task.AbstractMintingTask;
 import simblock.task.PartitionTask;
@@ -137,6 +139,8 @@ public class Main {
     putTaskAbsoluteTime(new PartitionTask(true), 7200000);
     putTaskAbsoluteTime(new PartitionTask(false), 36000000);
 
+    putTaskAbsoluteTime(new SamplingTask(), 300000);
+
     // Initial block height, we stop at END_BLOCK_HEIGHT
     int currentBlockHeight = 1;
 
@@ -155,6 +159,9 @@ public class Main {
         if (currentBlockHeight % 100 == 0 || currentBlockHeight == 2) {
           writeGraph(currentBlockHeight);
         }
+      } if (getTask() instanceof SamplingTask) {
+        writeBlocksInBranches();
+        putTask(new SamplingTask());
       }
       runTask();
     }
@@ -442,6 +449,38 @@ public class Main {
 
     } catch (IOException ex) {
       ex.printStackTrace();
+    }
+  }
+
+  public void writeBlocksInBranches() {
+    Set<Block> blocks = new HashSet<>();
+    Set<Block> branch = new HashSet<>();
+    List<int> numbers = new ArrayList<>();
+
+    // Count the all the forks
+    for (Node node : getSortedSimulatedNodes()) {
+      Block b = node.getBlock();
+      if (! blocks.contains(b)) {
+        branch.clear();
+        traverseBFTBlock(block, branch);
+        blocks.addAll(branch);
+        numbers.add(branch.size());
+      }
+    }
+
+    long time = getCurrentTime();
+    System.out.println("At time: " + time + " number of blocks:" + numbers);
+  }
+
+  public void traverseBFTBlock(BFTBlock block, Set<Block> blocks) {
+    if (block.getParents().size() == 0) {
+      return;
+    }
+
+    blocks.add(block);
+
+    for (Block b : block.getParents()) {
+      traverseBFTBlock(b, blocks);
     }
   }
 
