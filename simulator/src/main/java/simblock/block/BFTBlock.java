@@ -90,16 +90,24 @@ public class BFTBlock extends ProofOfWorkBlock {
         } else if (block.equals(this)) {
             return true;
         } else if (this.height <= block.height) {
-            if (((BFTBlock) block).getParents().size() == 0)
-                return true;
-            for (BFTBlock b : ((BFTBlock) block).getParents()) {
-                if (this.isOnSameChainAs(b))
-                    return true;
-            }
-            return false;
+            return isOnTheSameChainRec((BFTBlock) block);
         } else {
             return block.isOnSameChainAs(this);
         }
+    }
+
+    private boolean isOnTheSameChainRec(BFTBlock block) {
+        if (block.equals(this))
+            return true;
+        if (block.height <= this.height)
+            return false;
+        if (block.getParents().size() == 0)
+            return true;
+        for (BFTBlock b : block.getParents()) {
+            if (this.isOnTheSameChainRec(b))
+                return true;
+        }
+        return false;
     }
 
 

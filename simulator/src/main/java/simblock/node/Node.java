@@ -431,7 +431,7 @@ public class Node {
       this.minting();
       // Advertise received block
       this.sendInv(block);
-    } else if (!this.orphans.contains(block) && !block.isOnSameChainAs(this.block)) {
+    } else if (!this.orphans.contains(block) && !block.isOnSameChainAs(this.block) && !(this.block instanceof BFTBlock)) {
       // TODO better understand - what if orphan is not valid?
       // If the block was not valid but was an unknown orphan and is not on the same chain as the
       // current block
