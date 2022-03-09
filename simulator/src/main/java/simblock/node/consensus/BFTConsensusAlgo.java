@@ -52,7 +52,9 @@ public class BFTConsensusAlgo extends AbstractConsensusAlgo{
         if (!(receivedBlock instanceof BFTBlock)) {
             return false;
         }
-        return receivedBlock.getHeight() >= currentBlock.getHeight();
+        if (currentBlock == null)
+            return true;
+        return receivedBlock.getHeight() > currentBlock.getHeight();
     }
 
     @Override

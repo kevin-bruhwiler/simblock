@@ -80,11 +80,12 @@ public class Node {
    * The current block.
    */
   private Block block;
+  private Block pendingBlock;
 
   /*
   *  Blocks in different branches
   */
-  private List<Block> blocks;
+  private List<Block> blocks = new ArrayList<>();
   private List<Node> responded = new ArrayList<>();
   private TimeoutMessageTask timeoutTask = null;
 
@@ -297,7 +298,7 @@ public class Node {
     if (this.timeoutTask != null) {
       removeTask(this.timeoutTask);
       this.timeoutTask = null;
-      this.orphans.add(this.block);
+      this.orphans.add(this.pendingBlock);
     }
 
     // Update the current block
@@ -399,7 +400,7 @@ public class Node {
    * @param block the block
    */
   public void signBlock(BFTBlock block) {
-    this.block = block;
+    this.pendingBlock = block;
     this.responded.clear();
 
     List<Node> group = block.getConsensusGroup();
@@ -532,14 +533,13 @@ public class Node {
         this.timeoutTask = null;
 
         // Current block is marked as wasted
-        this.orphans.add(this.block);
-        this.block = this.block.getParent();
+        this.orphans.add(this.pendingBlock);
       }
 
       // If all responded, sign and sendout the new block
       if (responded.size() == ((BFTBlock)this.block).getConsensusGroup().size()) {
         // TODO: setup signee
-        ((BFTBlock)this.block).setSigners(responded);
+        ((BFTBlock)this.pendingBlock).setSigners(responded);
         // Setup consensus delay
         removeTask(this.timeoutTask);
         // TODO: ADD consensus latency to setting
@@ -551,10 +551,10 @@ public class Node {
     if (message instanceof TimeoutMessageTask) {
       TimeoutMessageTask.Type type = ((TimeoutMessageTask)message).getType();
       if (type == TimeoutMessageTask.Type.Consensus) {
-        receiveBlock(this.block);
         this.timeoutTask = null;
+        receiveBlock(this.pendingBlock);
       } else if (type == TimeoutMessageTask.Type.Hello) {
-        ((BFTBlock)this.block).setSigners(responded);
+        ((BFTBlock)this.pendingBlock).setSigners(responded);
         this.timeoutTask = new TimeoutMessageTask(this, this, 1000, TimeoutMessageTask.Type.Consensus);
         putTask(this.timeoutTask);
       }

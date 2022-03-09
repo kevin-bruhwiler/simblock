@@ -4,6 +4,7 @@ import simblock.node.Node;
 import simblock.settings.SimulationConfiguration;
 
 import java.math.BigInteger;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,10 +28,11 @@ public class BFTBlock extends ProofOfWorkBlock {
      */
     public BFTBlock(List<BFTBlock> parents, Node minter, long time, BigInteger difficulty) {
         super(parents.size() < 1 ? null : parents.get(0), minter, time, difficulty);
-        this.parents = parents;
+        this.parents = new ArrayList<>();
+        this.parents.addAll(parents);
         this.signers = new ArrayList<>();
         this.consensusGroup = new ArrayList<>();
-        this.height = parents.size() == 0 ? 0 : getMaxHeight(parents);
+        this.height = parents.size() == 0 ? 0 : getMaxHeight(parents) + 1;
 
         if (parents.size() > 1) {
             // we get each parent's consensus group and select some of them based on the branch size (w * hash power)
@@ -88,6 +90,8 @@ public class BFTBlock extends ProofOfWorkBlock {
         } else if (block.equals(this)) {
             return true;
         } else if (this.height <= block.height) {
+            if (((BFTBlock) block).getParents().size() == 0)
+                return true;
             for (BFTBlock b : ((BFTBlock) block).getParents()) {
                 if (this.isOnSameChainAs(b))
                     return true;
