@@ -32,7 +32,6 @@ import static simblock.simulator.Network.printRegion;
 import static simblock.simulator.Simulator.addNode;
 import static simblock.simulator.Simulator.getSimulatedNodes;
 import static simblock.simulator.Simulator.getSortedSimulatedNodes;
-import static simblock.simulator.Simulator.printAllPropagation;
 import static simblock.simulator.Simulator.setTargetInterval;
 import static simblock.simulator.Timer.getCurrentTime;
 import static simblock.simulator.Timer.getTask;
@@ -52,6 +51,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+
+import simblock.block.BFTBlock;
 import simblock.block.Block;
 import simblock.node.Node;
 import simblock.task.AbstractMintingTask;
@@ -155,7 +156,6 @@ public class Main {
           writeGraph(currentBlockHeight);
         }
       }
-      // Execute task
       runTask();
     }
 
@@ -170,10 +170,15 @@ public class Main {
     // Get the latest block from the first simulated node
     Block block = getSortedSimulatedNodes().get(0).getBlock();
 
-    //Update the list of known blocks by adding the parents of the aforementioned block
-    while (block.getParent() != null) {
-      blocks.add(block);
-      block = block.getParent();
+    if (block instanceof BFTBlock) {
+      dfs((BFTBlock) block, blocks);
+    }
+    else {
+      //Update the list of known blocks by adding the parents of the aforementioned block
+      while (block.getParent() != null) {
+        blocks.add(block);
+        block = block.getParent();
+      }
     }
 
     // Count the all the forks
@@ -268,6 +273,18 @@ public class Main {
     // Log simulation time in milliseconds
     System.out.println(simulationTime);
 
+  }
+
+  private static void dfs(BFTBlock block, Set<Block> blocks) {
+    if (block.getParents().size() == 0) {
+      blocks.add(block);
+    }
+    else {
+      blocks.add(block);
+      for (BFTBlock p : block.getParents()) {
+        dfs(p, blocks);
+      }
+    }
   }
 
 
