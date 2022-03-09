@@ -95,6 +95,16 @@ public class Node {
   private final Set<Block> orphans = new HashSet<>();
 
   /**
+   * Count of blocks seen at each index
+   */
+   private final ArrayList<Integer> blockCount = new ArrayList<>();
+   
+   /**
+   * Keep track of the current length of the chain at this node
+   */
+   private int length = 0;
+
+  /**
    * The current minting task
    */
   private AbstractMintingTask mintingTask = null;
@@ -173,6 +183,15 @@ public class Node {
    */
   public long getMiningPower() {
     return this.miningPower;
+  }
+
+   /**
+   * Gets the block count.
+   *
+   * @return the block count
+   */
+  public ArrayList<Integer> getBlockCount() {
+    return this.blockCount;
   }
 
   /**
@@ -292,6 +311,20 @@ public class Node {
     // Update the current block
     this.block = newBlock;
     printAddBlock(newBlock);
+    blockCount.add(1);
+
+    // If we minted this block, add to the count for this index
+    /*
+    if (length == blockCount.size()){
+        if (block.getMinter() == this){
+          blockCount.add(1);
+	    } else {
+          blockCount.add(0);
+	    }
+	}
+    length += 1;
+    */
+
     // Observe and handle new block arrival
     arriveBlock(newBlock, this);
   }
@@ -367,13 +400,16 @@ public class Node {
       if (this.block != null && !this.block.isOnSameChainAs(block)) {
         // If orphan mark orphan
         this.addOrphans(this.block, block);
-      }
-      // Else add to canonical chain
-      this.addToChain(block);
-      // Generates a new minting task
-      this.minting();
-      // Advertise received block
-      this.sendInv(block);
+      } else {
+        // Else add to canonical chain
+        this.addToChain(block);
+
+        // Generates a new minting task
+        this.minting();
+        // Advertise received block
+        this.sendInv(block);
+	  }
+      
     } else if (!this.orphans.contains(block) && !block.isOnSameChainAs(this.block)) {
       // TODO better understand - what if orphan is not valid?
       // If the block was not valid but was an unknown orphan and is not on the same chain as the
