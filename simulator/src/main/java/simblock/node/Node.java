@@ -450,6 +450,8 @@ public class Node {
 
     if (message instanceof InvMessageTask) {
       Block block = ((InvMessageTask) message).getBlock();
+//      if (!block.isOnSameChainAs(this.getBlock()))
+//        System.out.println("Recieved " + block);
       if (!this.orphans.contains(block) && !this.downloadingBlocks.contains(block)) {
         if (this.consensusAlgo.isReceivedBlockValid(block, this.block)) {
           AbstractMessageTask task = new RecMessageTask(this, from, block);
@@ -543,7 +545,7 @@ public class Node {
         // Setup consensus delay
         removeTask(this.timeoutTask);
         // TODO: ADD consensus latency to setting
-        this.timeoutTask = new TimeoutMessageTask(this, this, 1000, TimeoutMessageTask.Type.Consensus);
+        this.timeoutTask = new TimeoutMessageTask(this, this, 30000, TimeoutMessageTask.Type.Consensus);
         putTask(this.timeoutTask);
       }
     }
@@ -555,7 +557,7 @@ public class Node {
         receiveBlock(this.pendingBlock);
       } else if (type == TimeoutMessageTask.Type.Hello) {
         ((BFTBlock)this.pendingBlock).setSigners(responded);
-        this.timeoutTask = new TimeoutMessageTask(this, this, 1000, TimeoutMessageTask.Type.Consensus);
+        this.timeoutTask = new TimeoutMessageTask(this, this, 30000, TimeoutMessageTask.Type.Consensus);
         putTask(this.timeoutTask);
       }
     }

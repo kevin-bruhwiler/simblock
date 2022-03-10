@@ -22,6 +22,7 @@ public class PartitionTask implements Task {
 
   public void run() {
     // Instruct the Network class to start using new bandwidth matrices
+    System.out.println(partitioned ? "partition happened" : "partition recovered");
      Network.partitioned = partitioned;
   }
 }

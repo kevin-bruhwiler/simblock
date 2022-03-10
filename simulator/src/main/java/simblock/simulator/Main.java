@@ -17,15 +17,7 @@
 package simblock.simulator;
 
 
-import static simblock.settings.SimulationConfiguration.ALGO;
-import static simblock.settings.SimulationConfiguration.AVERAGE_MINING_POWER;
-import static simblock.settings.SimulationConfiguration.END_BLOCK_HEIGHT;
-import static simblock.settings.SimulationConfiguration.INTERVAL;
-import static simblock.settings.SimulationConfiguration.NUM_OF_NODES;
-import static simblock.settings.SimulationConfiguration.STDEV_OF_MINING_POWER;
-import static simblock.settings.SimulationConfiguration.TABLE;
-import static simblock.settings.SimulationConfiguration.CBR_USAGE_RATE;
-import static simblock.settings.SimulationConfiguration.CHURN_NODE_RATE;
+import static simblock.settings.SimulationConfiguration.*;
 import static simblock.simulator.Network.getDegreeDistribution;
 import static simblock.simulator.Network.getRegionDistribution;
 import static simblock.simulator.Network.printRegion;
@@ -46,20 +38,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import simblock.block.BFTBlock;
 import simblock.block.Block;
 import simblock.block.BFTBlock;
 import simblock.node.Node;
+import simblock.node.consensus.BFTConsensusAlgo;
 import simblock.task.AbstractMintingTask;
 import simblock.task.PartitionTask;
-
+import simblock.task.SamplingTask;
 
 
 /**
@@ -84,10 +72,14 @@ public class Main {
    */
   public static URI OUT_FILE_URI;
 
+  public static List<String> branchSize = new ArrayList<>();
+  public static List<String> orphansNumber = new ArrayList<>();
+
   static {
     try {
       CONF_FILE_URI = ClassLoader.getSystemResource("simulator.conf").toURI();
       OUT_FILE_URI = CONF_FILE_URI.resolve(new URI("../output/"));
+
     } catch (URISyntaxException e) {
       e.printStackTrace();
     }
@@ -98,6 +90,10 @@ public class Main {
    */
   //TODO use logger
   public static PrintWriter OUT_JSON_FILE;
+
+  public static PrintWriter BRANCH_SIZE_FILE;
+
+  public static PrintWriter ORPHAN_SIZE_FILE;
 
   /**
    * The constant STATIC_JSON_FILE.
@@ -111,6 +107,10 @@ public class Main {
           new BufferedWriter(new FileWriter(new File(OUT_FILE_URI.resolve("./output.json")))));
       STATIC_JSON_FILE = new PrintWriter(
           new BufferedWriter(new FileWriter(new File(OUT_FILE_URI.resolve("./static.json")))));
+      BRANCH_SIZE_FILE =  new PrintWriter(
+              new BufferedWriter(new FileWriter(new File(OUT_FILE_URI.resolve("./branch_size.csv")))));
+      ORPHAN_SIZE_FILE =  new PrintWriter(
+              new BufferedWriter(new FileWriter(new File(OUT_FILE_URI.resolve("./orphan_size.csv")))));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -136,8 +136,8 @@ public class Main {
     constructNetworkWithAllNodes(NUM_OF_NODES);
 
     // Add partition event to execute after 100 seconds? (it says these are milliseconds, but they can't be. Maybe simulated seconds?)
-    putTaskAbsoluteTime(new PartitionTask(true), 7200000);
-    putTaskAbsoluteTime(new PartitionTask(false), 36000000);
+    putTaskAbsoluteTime(new PartitionTask(true), 28800000);
+//    putTaskAbsoluteTime(new PartitionTask(false), 57600000);
 
     putTaskAbsoluteTime(new SamplingTask(), 300000);
 
@@ -160,8 +160,10 @@ public class Main {
           writeGraph(currentBlockHeight);
         }
       } if (getTask() instanceof SamplingTask) {
-        writeBlocksInBranches();
-        putTask(new SamplingTask());
+        if (ALGO == "simblock.node.consensus.BFTConsensusAlgo")
+          writeBlocksInBranches();
+        writeOrphans();
+        putTaskAbsoluteTime(new SamplingTask(), getCurrentTime() + 300000 );
       }
       runTask();
     }
@@ -280,6 +282,29 @@ public class Main {
     // Log simulation time in milliseconds
     System.out.println(simulationTime);
 
+
+
+    BRANCH_SIZE_FILE.println("\"time\",\"branchsize\"");
+    for (String s : branchSize)
+      BRANCH_SIZE_FILE.println(s);
+    BRANCH_SIZE_FILE.close();
+
+
+    ORPHAN_SIZE_FILE.println("\"time\",\"orphan_size\"");
+    for (String s : orphansNumber)
+      ORPHAN_SIZE_FILE.println(s);
+    ORPHAN_SIZE_FILE.close();
+
+  }
+
+  private static void writeOrphans() {
+    Set<Block> orphans = new HashSet<>();
+    // Gather all known orphans
+    for (Node node : getSimulatedNodes()) {
+      orphans.addAll(node.getOrphans());
+    }
+
+    orphansNumber.add("\"" + getCurrentTime() + "\",\"" + orphans.size() + "\"");
   }
 
   private static void dfs(BFTBlock block, Set<Block> blocks) {
@@ -452,34 +477,43 @@ public class Main {
     }
   }
 
-  public void writeBlocksInBranches() {
+  public static void writeBlocksInBranches() {
     Set<Block> blocks = new HashSet<>();
     Set<Block> branch = new HashSet<>();
-    List<int> numbers = new ArrayList<>();
+    Map<Block , Integer> numbers = new HashMap<>();
 
     // Count the all the forks
+
     for (Node node : getSortedSimulatedNodes()) {
-      Block b = node.getBlock();
-      if (! blocks.contains(b)) {
-        branch.clear();
-        traverseBFTBlock(block, branch);
-        blocks.addAll(branch);
-        numbers.add(branch.size());
+      List<Block> bs = node.getBlocks();
+      for (Block b : bs) {
+        for (Block tail : numbers.keySet()) {
+          if (b.isOnSameChainAs(tail) && b.getHeight()  > tail.getHeight()) {
+            numbers.remove(tail);
+            break;
+          }
+        }
+        if (!blocks.contains(b)) {
+          branch.clear();
+          traverseBFTBlock((BFTBlock) b, branch);
+          blocks.addAll(branch);
+          numbers.put(b, branch.size());
+        }
       }
     }
 
     long time = getCurrentTime();
-    System.out.println("At time: " + time + " number of blocks:" + numbers);
+    branchSize.add("\"" + time + "\",\"" + numbers.values() + "\"");
   }
 
-  public void traverseBFTBlock(BFTBlock block, Set<Block> blocks) {
+  public static void traverseBFTBlock(BFTBlock block, Set<Block> blocks) {
     if (block.getParents().size() == 0) {
       return;
     }
 
     blocks.add(block);
 
-    for (Block b : block.getParents()) {
+    for (BFTBlock b : block.getParents()) {
       traverseBFTBlock(b, blocks);
     }
   }

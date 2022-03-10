@@ -4,7 +4,6 @@ import simblock.node.Node;
 import simblock.settings.SimulationConfiguration;
 
 import java.math.BigInteger;
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +27,7 @@ public class BFTBlock extends ProofOfWorkBlock {
      */
     public BFTBlock(List<BFTBlock> parents, Node minter, long time, BigInteger difficulty) {
         super(parents.size() < 1 ? null : parents.get(0), minter, time, difficulty);
+        System.out.println("Block " + this + " parents: " + parents);
         this.parents = new ArrayList<>();
         this.parents.addAll(parents);
         this.signers = new ArrayList<>();
