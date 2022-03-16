@@ -312,7 +312,14 @@ public class Node {
       this.acceptedBlocks.remove(newBlock);
       if (((BFTBlock)newBlock).getParents().size() > 1) {
         // A merging block
-        this.blocks.clear();
+        List<Block> mergeBlocks = new ArrayList<>();
+        for (Block b : this.blocks) {
+          if (b.isOnSameChainAs(newBlock)) {
+            mergeBlocks.add(b);
+          }
+        }
+
+        this.blocks.removeAll(mergeBlocks);
         this.blocks.add(newBlock);
       } else {
         boolean isNewBranch = true;
@@ -407,6 +414,7 @@ public class Node {
     this.responded.clear();
 
     List<Node> group = block.getConsensusGroup();
+    //System.out.println("Group size:" + group.size());
     for (Node to : group) {
       AbstractMessageTask task = new HelloMessageTask(this, to, block);
       putTask(task);
@@ -522,11 +530,9 @@ public class Node {
 
       for (Block block : this.blocks) {
         BFTBlock bftBlock = (BFTBlock) block;
-        if (bftBlock.isOnSameChainAs(newBlock)) {
-          if (bftBlock.getHeight() > newBlock.getHeight()) {
-            accepted = false;
-            break;
-          }
+        if (bftBlock.getHeight() >= newBlock.getHeight()) {
+          accepted = false;
+          break;
         }
       }
 

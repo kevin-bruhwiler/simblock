@@ -118,7 +118,7 @@ public class NetworkConfiguration {
   };
 
   private static final long[][] DOWNLOAD_BANDWIDTH_2019_PARTITIONED_lower = {
-          {250000, 0, 180000, 0, 0, 0, 0},
+          {180000, 0, 180000, 0, 0, 0, 0},
           {0, 400000, 0, 0, 0, 0},
           {180000, 0, 180000, 0, 0, 0},
           {0, 0, 0, 228000, 228000, 228000},

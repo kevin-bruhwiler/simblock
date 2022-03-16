@@ -566,6 +566,7 @@ public class Main {
 
   public static void traverseBFTBlock(BFTBlock block, Set<Block> blocks) {
     if (block.getParents().size() == 0) {
+      blocks.add(block);
       return;
     }
 
