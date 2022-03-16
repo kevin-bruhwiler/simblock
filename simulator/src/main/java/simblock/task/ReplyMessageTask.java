@@ -16,6 +16,7 @@
 
 package simblock.task;
 
+import simblock.block.BFTBlock;
 import simblock.block.Block;
 import simblock.node.Node;
 
@@ -29,6 +30,7 @@ public class ReplyMessageTask extends AbstractMessageTask {
    * Block to be advertised.
    */
   private final boolean verify;
+  public final Block block;
 
   /**
    * Instantiates a new Inv message task.
@@ -37,9 +39,10 @@ public class ReplyMessageTask extends AbstractMessageTask {
    * @param to    the receiver
    * @param block the block to be advertised
    */
-  public ReplyMessageTask(Node from, Node to, boolean verify) {
+  public ReplyMessageTask(Node from, Node to, boolean verify, Block block) {
     super(from, to);
     this.verify = verify;
+    this.block = block;
   }
 
   /**

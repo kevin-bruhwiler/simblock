@@ -74,6 +74,7 @@ public class Main {
 
   public static List<String> branchSize = new ArrayList<>();
   public static List<String> orphansNumber = new ArrayList<>();
+  public static List<String> numberOfWastedBlock = new ArrayList<>();
 
   static {
     try {
@@ -95,6 +96,8 @@ public class Main {
 
   public static PrintWriter ORPHAN_SIZE_FILE;
 
+  public static PrintWriter NUMBER_OF_WASTED_FILE;
+
   /**
    * The constant STATIC_JSON_FILE.
    */
@@ -111,6 +114,8 @@ public class Main {
               new BufferedWriter(new FileWriter(new File(OUT_FILE_URI.resolve("./branch_size.csv")))));
       ORPHAN_SIZE_FILE =  new PrintWriter(
               new BufferedWriter(new FileWriter(new File(OUT_FILE_URI.resolve("./orphan_size.csv")))));
+      NUMBER_OF_WASTED_FILE =  new PrintWriter(
+              new BufferedWriter(new FileWriter(new File(OUT_FILE_URI.resolve("./number_of_wasted_blocks.csv")))));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -137,7 +142,7 @@ public class Main {
 
     // Add partition event to execute after 100 seconds? (it says these are milliseconds, but they can't be. Maybe simulated seconds?)
     putTaskAbsoluteTime(new PartitionTask(true), 28800000);
-//    putTaskAbsoluteTime(new PartitionTask(false), 57600000);
+    putTaskAbsoluteTime(new PartitionTask(false), 57600000);
 
     putTaskAbsoluteTime(new SamplingTask(), 300000);
 
@@ -151,7 +156,7 @@ public class Main {
         if (task.getParent().getHeight() == currentBlockHeight) {
           currentBlockHeight++;
         }
-        if (currentBlockHeight > END_BLOCK_HEIGHT) {
+        if (Block.latestId > END_BLOCK_HEIGHT) {
           break;
         }
         // Log every 100 blocks and at the second block
@@ -162,6 +167,8 @@ public class Main {
       } if (getTask() instanceof SamplingTask) {
         if (ALGO == "simblock.node.consensus.BFTConsensusAlgo")
           writeBlocksInBranches();
+        if (ALGO == "simblock.node.consensus.ProofOfWork")
+          writeNumberOfWastedBlocks();
         writeOrphans();
         putTaskAbsoluteTime(new SamplingTask(), getCurrentTime() + 300000 );
       }
@@ -295,6 +302,57 @@ public class Main {
       ORPHAN_SIZE_FILE.println(s);
     ORPHAN_SIZE_FILE.close();
 
+    NUMBER_OF_WASTED_FILE.println("\"time\",\"number_of_wasted_blocks\"");
+    if (ALGO == "simblock.node.consensus.BFTConsensusAlgo")
+    {
+      for (String s : orphansNumber)
+        NUMBER_OF_WASTED_FILE.println(s);
+    }
+    else {
+      for (String s : numberOfWastedBlock)
+        NUMBER_OF_WASTED_FILE.println(s);
+    }
+    NUMBER_OF_WASTED_FILE.close();
+
+  }
+
+  private static void writeNumberOfWastedBlocks() {
+    if (Network.partitioned) {
+      Set<Block> blocks = new HashSet<>();
+      Map<Block , Integer> numbers = new HashMap<>();
+      int highest = 0;
+      for (Node node : getSortedSimulatedNodes()) {
+        Block b = node.getBlock();
+        if (b.getHeight() > highest) {
+          highest = b.getHeight();
+        }
+        boolean added = false;
+        for (Block tail : numbers.keySet()) {
+          if (tail.isOnSameChainAs(b)) {
+            added = true;
+            break;
+          }
+        }
+        if (!added) {
+          int num = 0;
+          Block save = b;
+          while (b.getParent() != null && !blocks.contains(b)) {
+            num ++;
+            blocks.add(b);
+            b = b.getParent();
+          }
+          numbers.put(save, num);
+        }
+      }
+      numberOfWastedBlock.add("\"" + getCurrentTime() + "\",\"" + (Block.latestId - blocks.size() - 1) + "\"");
+      System.out.println("PAt time: " + getCurrentTime() + " : " + (Block.latestId - blocks.size() - 1));
+      System.out.println(Block.latestId + ", "+blocks.size() + ", " + highest);
+      System.out.println(numbers.values());
+    } else {
+      Block highest = getSortedSimulatedNodes().get(0).getBlock();
+      System.out.println("NAt time: " + getCurrentTime() + " : " + (Block.latestId - highest.getHeight() - 1));
+      numberOfWastedBlock.add("\"" + getCurrentTime() + "\",\"" + (Block.latestId - highest.getHeight() - 1) + "\"");
+    }
   }
 
   private static void writeOrphans() {

@@ -99,22 +99,40 @@ public class NetworkConfiguration {
       {29900000, 29900000, 18000000, 22800000, 22800000, 29900000}
   };
 
+  private static final long[][] DOWNLOAD_BANDWIDTH_2019_lower = {
+          {520000, 400000, 180000, 228000, 228000, 299000},
+          {400000, 400000, 180000, 228000, 228000, 299000},
+          {180000, 180000, 180000, 180000, 180000, 180000},
+          {228000, 228000, 180000, 228000, 228000, 228000},
+          {228000, 228000, 180000, 228000, 228000, 228000},
+          {299000, 299000, 180000, 228000, 228000, 299000}
+  };
+
   private static final long[][] DOWNLOAD_BANDWIDTH_2019_PARTITIONED = {
-      {25000000, 0, 18000000, 0, 0, 0, 0},
-      {0, 40000000, 18000000, 22800000, 22800000, 29900000},
-      {18000000, 18000000, 18000000, 18000000, 18000000, 18000000},
-      {0, 22800000, 18000000, 22800000, 22800000, 22800000},
-      {0, 22800000, 18000000, 22800000, 22800000, 22800000},
-      {0, 29900000, 18000000, 22800000, 22800000, 29900000}
+          {25000000, 0, 18000000, 0, 0, 0, 0},
+          {0, 40000000, 0, 22800000, 22800000, 29900000},
+          {18000000, 0, 18000000, 0, 0, 0},
+          {0, 22800000, 0, 22800000, 22800000, 22800000},
+          {0, 22800000, 0, 22800000, 22800000, 22800000},
+          {0, 29900000, 0, 22800000, 22800000, 29900000}
+  };
+
+  private static final long[][] DOWNLOAD_BANDWIDTH_2019_PARTITIONED_lower = {
+          {250000, 0, 180000, 0, 0, 0, 0},
+          {0, 400000, 0, 0, 0, 0},
+          {180000, 0, 180000, 0, 0, 0},
+          {0, 0, 0, 228000, 228000, 228000},
+          {0, 0, 0, 228000, 228000, 228000},
+          {0, 0, 0, 228000, 228000, 299000}
   };
 
   /**
    * List of download bandwidth assigned to each region, and last element is Inter-regional
    * bandwidth. (unit: bit per second)
    */
-  public static final long[][] DOWNLOAD_BANDWIDTH = DOWNLOAD_BANDWIDTH_2019;
+  public static final long[][] DOWNLOAD_BANDWIDTH = DOWNLOAD_BANDWIDTH_2019_lower;
 
-  public static final long[][] DOWNLOAD_BANDWIDTH_PARTITIONED = DOWNLOAD_BANDWIDTH_2019_PARTITIONED;
+  public static final long[][] DOWNLOAD_BANDWIDTH_PARTITIONED = DOWNLOAD_BANDWIDTH_2019_PARTITIONED_lower;
 
   /**
    * List of upload bandwidth assigned to each region. (unit: bit per second), and last element

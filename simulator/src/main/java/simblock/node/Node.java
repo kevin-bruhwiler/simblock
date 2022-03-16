@@ -82,6 +82,8 @@ public class Node {
   private Block block;
   private Block pendingBlock;
 
+  private Set<BFTBlock> acceptedBlocks = new HashSet<>();
+
   /*
   *  Blocks in different branches
   */
@@ -307,6 +309,7 @@ public class Node {
     // Nick
     // handle adding blocks with branch
     if (newBlock instanceof BFTBlock) {
+      this.acceptedBlocks.remove(newBlock);
       if (((BFTBlock)newBlock).getParents().size() > 1) {
         // A merging block
         this.blocks.clear();
@@ -504,13 +507,21 @@ public class Node {
     // Nick
     // handle new message type
     if (message instanceof HelloMessageTask) {
-      if (this.timeoutTask == null) {
-        return;
-      }
+//      if (this.timeoutTask == null) {
+//        return;
+//      }
       boolean accepted = true;
+      Block newBlock = ((HelloMessageTask) message).getBlock();
+      for (Block block : this.acceptedBlocks) {
+        BFTBlock bftBlock = (BFTBlock) block;
+        if (!bftBlock.equals(newBlock) && bftBlock.getHeight() >= newBlock.getHeight()) {
+          accepted = false;
+          break;
+        }
+      }
+
       for (Block block : this.blocks) {
         BFTBlock bftBlock = (BFTBlock) block;
-        Block newBlock = ((HelloMessageTask) message).getBlock();
         if (bftBlock.isOnSameChainAs(newBlock)) {
           if (bftBlock.getHeight() > newBlock.getHeight()) {
             accepted = false;
@@ -518,15 +529,19 @@ public class Node {
           }
         }
       }
+
+      if (accepted)
+        acceptedBlocks.add((BFTBlock) newBlock);
       // If not seen any block at the slot, reply with yes
-      AbstractMessageTask task = new ReplyMessageTask(this, from, accepted);
+      AbstractMessageTask task = new ReplyMessageTask(this, from, accepted, newBlock);
+      putTask(task);
     }
 
     if (message instanceof ReplyMessageTask) {
-      if (this.timeoutTask == null) {
+      if (this.timeoutTask == null || !((ReplyMessageTask)message).block.equals(this.pendingBlock)) {
         return;
       }
-      
+
       if (((ReplyMessageTask)message).verified()) {
         responded.add(from);
       } else {
@@ -545,7 +560,7 @@ public class Node {
         // Setup consensus delay
         removeTask(this.timeoutTask);
         // TODO: ADD consensus latency to setting
-        this.timeoutTask = new TimeoutMessageTask(this, this, 30000, TimeoutMessageTask.Type.Consensus);
+        this.timeoutTask = new TimeoutMessageTask(this, this, 15000, TimeoutMessageTask.Type.Consensus);
         putTask(this.timeoutTask);
       }
     }
@@ -557,7 +572,7 @@ public class Node {
         receiveBlock(this.pendingBlock);
       } else if (type == TimeoutMessageTask.Type.Hello) {
         ((BFTBlock)this.pendingBlock).setSigners(responded);
-        this.timeoutTask = new TimeoutMessageTask(this, this, 30000, TimeoutMessageTask.Type.Consensus);
+        this.timeoutTask = new TimeoutMessageTask(this, this, 15000, TimeoutMessageTask.Type.Consensus);
         putTask(this.timeoutTask);
       }
     }

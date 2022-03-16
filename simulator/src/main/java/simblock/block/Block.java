@@ -50,7 +50,7 @@ public class Block {
   /**
    * Latest known block id.
    */
-  private static int latestId = 0;
+  public static int latestId = 0;
 
   /**
    * Instantiates a new Block.
