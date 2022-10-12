@@ -26,7 +26,6 @@ import static simblock.settings.NetworkConfiguration.UPLOAD_BANDWIDTH;
 import static simblock.settings.NetworkConfiguration.UPLOAD_BANDWIDTH_PARTITIONED;
 import static simblock.simulator.Main.STATIC_JSON_FILE;
 import static simblock.simulator.Main.random;
-
 import java.util.List;
 import simblock.settings.NetworkConfiguration;
 

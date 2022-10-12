@@ -57,8 +57,10 @@ def analyze_agreement(pa):
 	#	slopes.append((drops[i][2]-drops[i-1][3])/(drops[i][0]-drops[i-1][0]))
 	return drops, running_means, magnitudes, slopes, lines
 
+#/home/fay/IdeaProjects/simblockG/simulator
 
-with open(".\\simulator\\src\\dist\\output\\output.json") as f:
+#with open(".\\simulator\\src\\dist\\output\\output.json") as f:
+with open("/home/fay/IdeaProjects/simblockG/simulator/src/dist/output/output.json") as f:
 	output = json.load(f)
 	
 average_propagation_time = {}

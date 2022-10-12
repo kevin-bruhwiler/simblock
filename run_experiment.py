@@ -1,5 +1,6 @@
 from subprocess import check_output
 from collections import defaultdict
+import ast
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -15,14 +16,13 @@ def upload_with_value():
 with open('D:\\simblock\\simulator\\src\\main\\java\\simblock\\settings\\NetworkConfiguration.java', 'r') as f:
     settings = f.read()
 
-throttleses = [[[-1]*6, [100000]*6, [50000]*6, [10000]*6, [5000]*6, [1000]*6, [0]*6, [-1]*6],
-               #[[-1]*6, [100000]*5 + [11300000], [50000]*5 + [11300000], [10000]*5 + [11300000], [5000]*5 + [11300000], [1000]*5 + [11300000], [0]*5 + [11300000], [-1]*6],
-               [[-1]*6, [100000]*4 + [10200000, 11300000], [50000]*4 + [10200000, 11300000], [10000]*4 + [10200000, 11300000], [5000]*4 + [10200000, 11300000], [1000]*4 + [10200000, 11300000], [0]*4 + [10200000, 11300000], [-1]*6],
-               #[[-1]*6, [100000]*3 + [15700000, 10200000, 11300000], [50000]*3 + [15700000, 10200000, 11300000], [10000]*3 + [15700000, 10200000, 11300000], [5000]*3 + [15700000, 10200000, 11300000], [1000]*3 + [15700000, 10200000, 11300000], [0]*3 + [15700000, 10200000, 11300000], [-1]*6],
-               [[-1]*6, [100000]*2 + [5800000, 15700000, 10200000, 11300000], [50000]*2 + [5800000, 15700000, 10200000, 11300000], [10000]*2 + [5800000, 15700000, 10200000, 11300000], [5000]*2 + [5800000, 15700000, 10200000, 11300000], [1000]*2 + [5800000, 15700000, 10200000, 11300000], [0]*2 + [5800000, 15700000, 10200000, 11300000], [-1]*6],
-               #[[-1]*6, [100000]*1 + [20700000, 5800000, 15700000, 10200000, 11300000], [50000]*1 + [20700000, 5800000, 15700000, 10200000, 11300000], [10000]*1 + [20700000, 5800000, 15700000, 10200000, 11300000], [5000]*1 + [20700000, 5800000, 15700000, 10200000, 11300000], [1000]*1 + [20700000, 5800000, 15700000, 10200000, 11300000], [0]*1 + [20700000, 5800000, 15700000, 10200000, 11300000], [-1]*6],
-               [[-1]*6, [19200000, 20700000, 5800000, 15700000, 10200000, 11300000], [19200000, 20700000, 5800000, 15700000, 10200000, 11300000], [19200000, 20700000, 5800000, 15700000, 10200000, 11300000], [19200000, 20700000, 5800000, 15700000, 10200000, 11300000], [19200000, 20700000, 5800000, 15700000, 10200000, 11300000], [19200000, 20700000, 5800000, 15700000, 10200000, 11300000], [-1]*6]]
-throttle_data = {}
+throttles = [1000, 10000000, 1000000, 100000, 10000, 1000]
+data = defaultdict(list)
+block_counts = defaultdict(list)
+
+for i in range(1, len(throttles)):
+	for l in download_with_value():
+		settings = settings.replace(l.format(throttles[i-1]), l.format(throttles[i]))
 
 #for k, throttles in enumerate(throttleses):
 data = []#defaultdict(list)
@@ -36,8 +36,13 @@ for _ in range(1):
 		#for l in upload_with_value():
 	#		settings = settings.replace(l.format(*throttles[i-1]), l.format(*throttles[i]))
 
-	#	with open('D:\\simblock\\simulator\\src\\main\\java\\simblock\\settings\\NetworkConfiguration.java', 'w') as f:
-	#		f.write(settings)
+	for _ in range(3):
+		out = check_output("gradlew.bat :simulator:run", shell=True).decode()
+		for line in out.split('\n'):
+			if line.startswith("Number of detected forks:"):
+				data[i].append(int(line.split(' ')[-1]))
+			elif line.startswith("Count of blocks at each node: "):
+				block_counts[throttles[i]].append(ast.literal_eval(line.split(': ')[-1]))
 			
 	#	if i == len(throttles)-1:
 	#		break
@@ -67,4 +72,14 @@ plt.ylabel("Number of Forks")
 
 plt.legend()
 plt.title("Partition Analysis")
+plt.show()
+plt.clf()
+
+print(block_counts)
+for k, v in block_counts.items():
+	plt.plot(np.mean(np.array(v), axis=0), label="Bandwidth of " + str(k) + " bits/sec")
+plt.legend()
+plt.ylabel("Total Blocks Added")
+plt.xlabel("Index of the Block")
+plt.title("Total Blocks Added in Superstorm Scenario")
 plt.show()
