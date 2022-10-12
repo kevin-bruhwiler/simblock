@@ -285,7 +285,8 @@ public class Node {
    * Initializes the routing table.
    */
   public void joinNetwork() {
-    this.routingTable.initTable();
+    //this.routingTable.initTable();
+    this.routingTable.initIOTTable();
   }
 
   /**
