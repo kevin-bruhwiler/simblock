@@ -398,13 +398,19 @@ public class Node {
    */
   public void receiveBlock(Block block) {
     if (this.consensusAlgo.isReceivedBlockValid(block, this.block)) {
-      if (this.block != null && !this.block.isOnSameChainAs(block)) {
+      if (this.block != null && !this.block.isOnSameChainAs(block) && block.getHeight() > this.block.getHeight()){
+         // Else add to canonical chain
+        this.addToChain(block);
+        // Generates a new minting task
+        this.minting();
+        // Advertise received block
+        this.sendInv(block);
+	  } else if (this.block != null && !this.block.isOnSameChainAs(block)) {
         // If orphan mark orphan
         this.addOrphans(this.block, block);
       } else {
         // Else add to canonical chain
         this.addToChain(block);
-
         // Generates a new minting task
         this.minting();
         // Advertise received block
